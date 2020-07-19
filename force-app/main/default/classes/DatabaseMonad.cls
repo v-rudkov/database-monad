@@ -25,8 +25,8 @@ public class DatabaseMonad {
     private List<Bundle> bundles = new List<Bundle>();
 
     public interface Composer {
-        SObject compose(Map<String, SObject> input);
-        String getType();
+        SObject composeSObject(Map<String, SObject> input);
+        String getSObjectType();
     }
 
     // this is the unit function in terms of the Monad pattern
@@ -52,7 +52,7 @@ public class DatabaseMonad {
             if (bundle.isFailed()) continue;
 
             try {
-                bundle.add(composer.compose(bundle.contents));
+                bundle.add(composer.composeSObject(bundle.contents));
             }
 
             catch (Exception ex) {
@@ -68,7 +68,7 @@ public class DatabaseMonad {
     private static List<Bundle> insertSObjects(Composer composer, List<Bundle> bundles) {
 
         List<Bundle> successfulBundles = DatabaseMonad.excludeFailed(bundles);
-        List<SObject> sobjectsToInsert = DatabaseMonad.extractSObjects(composer.getType(), successfulBundles);
+        List<SObject> sobjectsToInsert = DatabaseMonad.extractSObjects(composer.getSObjectType(), successfulBundles);
 
         List<Database.SaveResult> results = Database.insert(sobjectsToInsert, false);
 
