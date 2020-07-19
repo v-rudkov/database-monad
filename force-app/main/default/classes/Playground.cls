@@ -2,35 +2,35 @@ public class Playground {
 
     public class AccountComposer implements DatabaseMonad.Composer {
 
-        public List<SObject> compose(List<Map<String, SObject>> input) {
+        public SObject compose(Map<String, SObject> input) {
 
-            List<Account> accounts = new List<Account>();
+            Lead lead = (Lead) input.get('Lead');
+            Account account = new Account(Name = lead.Company);
 
-            for (Map<String, SObject> item : input) {
-                Lead lead = (Lead) item.get('Lead');
-                accounts.add(new Account(Name = lead.Company));
-            }
+            return account;
+        }
 
-            return accounts;
+        public String getType() {
+            return 'Account';
         }
     }
 
     public class ContactComposer implements DatabaseMonad.Composer {
 
-        public List<SObject> compose(List<Map<String, SObject>> input) {
+        public SObject compose(Map<String, SObject> input) {
 
-            List<Contact> contacts = new List<Contact>();
+            Lead lead = (Lead) input.get('Lead');
+            Account account = (Account) input.get('Account');
+            Contact contact = new Contact(
+                Lastname = lead.Lastname,
+                AccountId = account.Id
+            );
 
-            for (Map<String, SObject> item : input) {
-                Lead lead = (Lead) item.get('Lead');
-                Account account = (Account) item.get('Account');
-                contacts.add(new Contact(
-                    Lastname = lead.Lastname,
-                    AccountId = account.Id
-                ));
-            }
+            return contact;
+        }
 
-            return contacts;
+        public String getType() {
+            return 'Contact';
         }
     }
 
