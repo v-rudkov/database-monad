@@ -2,19 +2,29 @@ public class DatabaseMonad {
 
     public class Bundle {
 
-        public Map<String, SObject> contents = new Map<String, SObject>();
+        public Map<String, Object> contents = new Map<String, Object>();
         public String error;
+
+        public Bundle(Map<String, Object> pairs) {
+            this.add(pairs);
+        }
 
         public Bundle(SObject sobj) {
             this.add(sobj);
+        }
+
+        public void add(Map<String, Object> pairs) {
+            for (String key : pairs.keySet()) {
+                this.contents.put(key, pairs.get(key));
+            }
         }
 
         public void add(SObject sobj) {
             this.contents.put(String.valueOf(sobj.getSObjectType()), sobj);
         }
 
-        public SObject get(String sobjectType) {
-            return contents.get(sobjectType);
+        public Object get(String key) {
+            return contents.get(key);
         }
 
         public Boolean isFailed() {
@@ -25,8 +35,8 @@ public class DatabaseMonad {
     private List<Bundle> bundles = new List<Bundle>();
 
     public interface Composer {
-        SObject composeSObject(Map<String, SObject> input);
-        String getSObjectType();
+        Object newValue(Map<String, Object> input);
+        String getKey();
     }
 
     // this is the unit function in terms of the Monad pattern
@@ -52,7 +62,9 @@ public class DatabaseMonad {
             if (bundle.isFailed()) continue;
 
             try {
-                bundle.add(composer.composeSObject(bundle.contents));
+                bundle.add(new Map<String, Object>{
+                    composer.getKey() => composer.newValue(bundle.contents)
+                });
             }
 
             catch (Exception ex) {
@@ -68,7 +80,11 @@ public class DatabaseMonad {
     private static List<Bundle> insertSObjects(Composer composer, List<Bundle> bundles) {
 
         List<Bundle> successfulBundles = DatabaseMonad.excludeFailed(bundles);
-        List<SObject> sobjectsToInsert = DatabaseMonad.extractSObjects(composer.getSObjectType(), successfulBundles);
+        List<SObject> sobjectsToInsert = (List<SObject>) DatabaseMonad.extractObjects(
+            List<SObject>.class,
+            composer.getKey(),
+            successfulBundles
+        );
 
         List<Database.SaveResult> results = Database.insert(sobjectsToInsert, false);
 
@@ -86,11 +102,11 @@ public class DatabaseMonad {
     }
 
     @testVisible
-    private static List<SObject> extractSObjects(String type, List<Bundle> input) {
-        List<SObject> result = new List<SObject>();
+    private static List<Object> extractObjects(Type objectType, String key, List<Bundle> input) {
+        List<Object> result = (List<Object>)objectType.newInstance();
         for (Bundle bundle : input) {
             if (bundle.isFailed()) continue;
-            result.add(bundle.get(type));
+            result.add(bundle.get(key));
         }
         return result;
     }

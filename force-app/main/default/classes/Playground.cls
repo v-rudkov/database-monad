@@ -2,7 +2,7 @@ public class Playground {
 
     public class AccountComposer implements DatabaseMonad.Composer {
 
-        public SObject composeSObject(Map<String, SObject> input) {
+        public Object newValue(Map<String, Object> input) {
 
             Lead lead = (Lead) input.get('Lead');
             Account account = new Account(Name = lead.Company);
@@ -10,14 +10,14 @@ public class Playground {
             return account;
         }
 
-        public String getSObjectType() {
+        public String getKey() {
             return 'Account';
         }
     }
 
     public class ContactComposer implements DatabaseMonad.Composer {
 
-        public SObject composeSObject(Map<String, SObject> input) {
+        public Object newValue(Map<String, Object> input) {
 
             Lead lead = (Lead) input.get('Lead');
             Account account = (Account) input.get('Account');
@@ -29,7 +29,7 @@ public class Playground {
             return contact;
         }
 
-        public String getSObjectType() {
+        public String getKey() {
             return 'Contact';
         }
     }
