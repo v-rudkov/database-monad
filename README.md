@@ -10,7 +10,7 @@ will it be? (Does it supports partial success? How are the potential exceptions 
 ```
     System.Savepoint serviceSavePoint = Database.setSavePoint();
     try {
-        List<Lead> leads = new List<Lead>();
+        List<Lead> leads = [select ... from Lead where ...];
 
         for (Lead lead : leads) {
             Accounts.add(new Account(Name = lead.Company));
@@ -43,7 +43,7 @@ somewhat higher fault tolerance - it is still the same all or none behavior:
 ```
     fflib_ISObjectUnitOfWork unitOfWork = Application.UnitOfWork.newInstance();
 
-    List<Lead> leads = new List<Lead>();
+    List<Lead> leads = [select ... from Lead where ...];
     List<Account> accounts
 
     for (Lead lead : leads) {
@@ -64,7 +64,67 @@ somewhat higher fault tolerance - it is still the same all or none behavior:
 
     unitOfWork.commitWork();
 ```
+
 ### "Monad" approach
+
+```
+        List<Lead> leads = [select ... from Lead where ...];
+
+        return new DatabaseMonad(leads)
+            .insertSObjects(new AccountComposer())
+            .insertSObjects(new ContactComposer())
+            .convertLeads(new LeadConvertComposer());
+
+
+
+    public class AccountComposer implements DatabaseMonad.Composer {
+
+        public Object newValue(Map<String, Object> input) {
+            Lead lead = (Lead) input.get('Lead');
+            return new Account(Name = lead.Company);
+        }
+
+        public String getKey() {
+            return 'Account';
+        }
+    }
+
+    public class ContactComposer implements DatabaseMonad.Composer {
+
+        public Object newValue(Map<String, Object> input) {
+            Lead lead = (Lead) input.get('Lead');
+            Account account = (Account) input.get('Account');
+            return new Contact(Lastname = lead.Lastname, AccountId = account.Id);
+        }
+
+        public String getKey() {
+            return 'Contact';
+        }
+    }
+
+    public class LeadConvertComposer implements DatabaseMonad.Composer {
+
+        public Object newValue(Map<String, Object> input) {
+
+            Lead lead = (Lead) input.get('Lead');
+            Account account = (Account) input.get('Account');
+            Contact contact = (Contact) input.get('Contact');
+
+            Database.LeadConvert leadConvert = new Database.LeadConvert();
+            leadConvert.setLeadId(lead.Id);
+            leadConvert.setAccountId(account.Id);
+            leadConvert.setContactId(contact.Id);
+            // ...
+
+            return leadConvert;
+        }
+
+        public String getKey() {
+            return 'LeadConvert';
+        }
+    }
+
+```
 
 ```
     public class Bundle {
@@ -73,3 +133,6 @@ somewhat higher fault tolerance - it is still the same all or none behavior:
         public String error;
     }
 ```
+
+![Bundles](/img/Bundles.png)
+
