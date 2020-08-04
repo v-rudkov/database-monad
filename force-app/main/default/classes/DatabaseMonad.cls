@@ -54,6 +54,28 @@ public class DatabaseMonad {
         return this;
     }
 
+    public DatabaseMonad convertLeads(Composer composer) {
+
+        this.bundles = DatabaseMonad.composeSObjects(composer, this.bundles);
+        this.bundles = DatabaseMonad.convertLeads(composer, this.bundles);
+
+        return this;
+    }
+
+    public DatabaseMonad handleErrors() {
+
+        for (Bundle bundle : DatabaseMonad.getFailed(this.bundles)) {
+            System.debug(String.valueOf(bundle));
+        }
+
+        return this;
+    }
+
+    public List<Bundle> getContents() {
+
+        return this.bundles;
+    }
+
     @testVisible
     private static List<Bundle> composeSObjects(Composer composer, List<Bundle> bundles) {
 
@@ -102,6 +124,33 @@ public class DatabaseMonad {
     }
 
     @testVisible
+    private static List<Bundle> convertLeads(Composer composer, List<Bundle> bundles) {
+
+        List<Bundle> successfulBundles = DatabaseMonad.excludeFailed(bundles);
+        List<Database.LeadConvert> leadConverts = (List<Database.LeadConvert>) DatabaseMonad.extractObjects(
+            List<Database.LeadConvert>.class,
+            composer.getKey(),
+            successfulBundles
+        );
+
+        List<Database.LeadConvertResult> results = Database.convertLead(leadConverts, false);
+
+        for (Integer i=0; i<results.size(); i++) {
+
+            if (results[i].isSuccess() != true) {
+                successfulBundles[i].error = String.valueOf(results[i].getErrors());
+                continue;
+            }
+
+            successfulBundles[i].add(new Map<String, Object>{
+                composer.getKey() => results[i]
+            });
+        }
+
+        return bundles;
+    }
+
+    @testVisible
     private static List<Object> extractObjects(Type objectType, String key, List<Bundle> input) {
         List<Object> result = (List<Object>)objectType.newInstance();
         for (Bundle bundle : input) {
@@ -120,4 +169,12 @@ public class DatabaseMonad {
         return result;
     }
 
+    @testVisible
+    private static List<Bundle> getFailed(List<Bundle> input) {
+        List<Bundle> result = new List<Bundle>();
+        for (Bundle bundle : input) {
+            if (bundle.isFailed()) result.add(bundle);
+        }
+        return result;
+    }
 }

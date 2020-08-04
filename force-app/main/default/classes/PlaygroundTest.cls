@@ -7,9 +7,10 @@ public class PlaygroundTest {
         insert lead;
 
         // when
-        Playground.main();
+        List<DatabaseMonad.Bundle> result = (List<DatabaseMonad.Bundle>) Playground.main();
 
         // then
+        List<Lead> leads = [select Id, IsConverted, ConvertedAccountId, ConvertedContactId from Lead];
         List<Account> accounts = [select Id, Name from Account];
         List<Contact> contacts = [select Id, AccountId, Lastname from Contact];
 
@@ -18,5 +19,10 @@ public class PlaygroundTest {
 
         System.assertEquals(1, contacts.size());
         System.assertEquals(lead.Lastname, contacts[0].Lastname);
+
+        System.assertEquals(1, leads.size());
+        System.assertEquals(true, leads[0].IsConverted);
+        System.assertEquals(accounts[0].Id, leads[0].ConvertedAccountId);
+        System.assertEquals(contacts[0].Id, leads[0].ConvertedContactId);
     }
 }
