@@ -1,9 +1,9 @@
-# Monad Design Pattern
+# Inspired by the Monad
 
 Let say we need to implement a method that will take a list of leads and will convert them into new accounts and contacts.
-And becase we need a particular record types for accounts and contacts we need to create them first and convert the leads
-into newly created accouns and contacts. So what might an approach to implement this scenario look like? And how fauld tolerant
-will it be? (Does it supports partial success? How are the potential exceptions going to be processed?)
+And because we need a particular record types for accounts and contacts, we need to create them first and convert the leads
+into newly created accouns and contacts. So what might an approach to implement this scenario look like? And how fault tolerant
+will it be? (Does it support partial success? How are the potential exceptions going to be processed?)
 
 ### Simple straightforward approach:
 
@@ -44,7 +44,6 @@ somewhat higher fault tolerance - it is still the same all or none behavior:
     fflib_ISObjectUnitOfWork unitOfWork = Application.UnitOfWork.newInstance();
 
     List<Lead> leads = [select ... from Lead where ...];
-    List<Account> accounts
 
     for (Lead lead : leads) {
 
@@ -56,16 +55,18 @@ somewhat higher fault tolerance - it is still the same all or none behavior:
         );
         unitOfWork.registerNew(con, Contact.AccountId, account);
 
-        // pseudo code, as fflib doesn't support this
         Database.LeadConvert leadConvert = new Database.LeadConvert();
         // ...
-        unitOfWork.registerLeadConvert(leadConvert);
+
+        unitOfWork.registerLeadConvert(leadConvert);    // pseudo code, as fflib doesn't support this
     }
 
     unitOfWork.commitWork();
 ```
 
 ### "Monad" approach
+
+It's hard to implement a true monad in apex, as it doesn't support passing functions as paremeters.
 
 ```
         List<Lead> leads = [select ... from Lead where ...];
