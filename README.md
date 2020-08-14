@@ -74,7 +74,9 @@ It's hard to implement a true monad in apex, as it doesn't support passing funct
         return new DatabaseMonad(leads)
             .insertSObjects(new AccountComposer())
             .insertSObjects(new ContactComposer())
-            .convertLeads(new LeadConvertComposer());
+            .convertLeads(new LeadConvertComposer())
+            .handleErrors()
+            .getContents();
 
 
 
